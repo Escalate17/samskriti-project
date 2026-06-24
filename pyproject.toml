@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "samskriti-project-local"
+version = "1.0.0"
+description = "Samskriti Local Project State MCP Server"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+samskriti-project = "project_state.mcp_adapter:main"
+
+[tool.setuptools]
+packages = ["project_state"]
