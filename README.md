@@ -101,7 +101,9 @@ Tool B reads back the decision tool A just wrote — no re-explaining.
 
 ## Demo
 
-<!-- screenshot/GIF of cross-AI handoff goes here -->
+<img width="2880" height="1800" alt="Image" src="https://github.com/user-attachments/assets/514bcdc0-4219-4987-bf3b-9fe273b1728e" />
+
+<img width="2880" height="1800" alt="Image" src="https://github.com/user-attachments/assets/3e862787-0809-40f5-af33-742fc5a48050" />
 
 ## Privacy
 
