@@ -1,6 +1,25 @@
 # samskriti-project
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
+[![MCP](https://img.shields.io/badge/MCP-stdio%20server-7c3aed.svg)](https://modelcontextprotocol.io/)
+
 A local MCP server that lets multiple AI coding tools share structured project state — decisions, tasks, bugs — so they coordinate without re-explaining.
+
+```
+   Claude Code      Cursor        Codex
+       │              │             │
+       │  read/write  │  read/write │
+       └──────────────┼─────────────┘
+                      ▼
+            ┌───────────────────────┐
+            │   samskriti-project   │   (local MCP server, stdio)
+            └───────────┬───────────┘
+                        ▼
+              ┌───────────────────┐
+              │   SQLite store    │   ~/.samskriti/  (100% local)
+              └───────────────────┘
+```
 
 ## The problem
 
@@ -79,6 +98,10 @@ In **Claude Code**, type `/mcp` — you should see `samskriti-project` listed wi
 2. In **tool B** (e.g. Cursor): *"Get the project state for 'demo'."*
 
 Tool B reads back the decision tool A just wrote — no re-explaining.
+
+## Demo
+
+<!-- screenshot/GIF of cross-AI handoff goes here -->
 
 ## Privacy
 
