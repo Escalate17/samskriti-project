@@ -8,21 +8,25 @@ You make a decision with one AI tool, then switch to another and have to re-expl
 
 ## Install
 
-One command, cross-platform (macOS, Linux, Windows):
+Install with **pipx** (recommended — this puts the `samskriti-project` command on your PATH so your AI tools can find it):
 
 ```bash
-# With uv (recommended)
-uvx --from git+https://github.com/Escalate17/samskriti-project samskriti-project
-
-# Or install the CLI with pipx
 pipx install git+https://github.com/Escalate17/samskriti-project
 ```
 
-This installs the `samskriti-project` executable.
+Don't have pipx? Install it first: `python3 -m pip install --user pipx && python3 -m pipx ensurepath` (then restart your terminal).
+
+To verify the install worked:
+
+```bash
+samskriti-project --help
+```
+
+If you see the help text, you're ready to connect it.
 
 ## Connect
 
-Add the server to your tool's MCP config.
+Add the server to your AI tool's MCP config, then **fully restart the tool**.
 
 **Claude Code** (`~/.claude.json`):
 ```json
@@ -54,6 +58,12 @@ Add the server to your tool's MCP config.
 command = "samskriti-project"
 args = []
 ```
+
+> If your tool can't find the command, it's a PATH issue — run `which samskriti-project` to get the full path, and use that full path as the `command` value instead.
+
+## Verify it's connected
+
+In **Claude Code**, type `/mcp` — you should see `samskriti-project` listed with its 5 tools. (Cursor and Codex have similar MCP status indicators in their settings.)
 
 ## Tools
 

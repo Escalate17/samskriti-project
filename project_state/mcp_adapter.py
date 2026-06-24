@@ -481,7 +481,38 @@ def _result(req_id, result: dict) -> None:
 def _error(req_id, code: int, message: str) -> None:
     _send({"jsonrpc": "2.0", "id": req_id, "error": {"code": code, "message": message}})
 
+HELP_TEXT = """\
+samskriti-project — local MCP server for shared AI project state
+
+A stdio Model Context Protocol (MCP) server. It is normally launched by your
+AI tool (Claude Code, Cursor, Codex, ...) via an MCP config entry, not run
+directly. Running it with no arguments starts the stdio JSON-RPC loop and waits
+for an MCP client on stdin.
+
+Usage:
+  samskriti-project            Start the MCP server (stdio JSON-RPC)
+  samskriti-project --help     Show this help and exit
+  samskriti-project --version  Show version and exit
+
+Tools exposed: record_project_entry, get_project_state, search_project_state,
+update_project_entry, list_projects
+
+State is stored locally in a SQLite database under ~/.samskriti/
+(override with SAMSKRITI_HOME or SAMSKRITI_PROJECT_DB).
+"""
+
+
 def main() -> None:
+    args = sys.argv[1:]
+    if any(a in ("-h", "--help") for a in args):
+        sys.stdout.write(HELP_TEXT)
+        sys.stdout.flush()
+        return
+    if any(a in ("-V", "--version") for a in args):
+        sys.stdout.write(f"{SERVER_INFO['name']} {SERVER_INFO['version']}\n")
+        sys.stdout.flush()
+        return
+
     for line in sys.stdin:
         line = line.strip()
         if not line:
