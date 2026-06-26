@@ -92,11 +92,7 @@ In **Claude Code**, type `/mcp` — you should see `samskriti-project` listed wi
 - **update_project_entry** — edit an entry's title, content, or status.
 - **list_projects** — list all tracked projects.
 
-Quick shortcuts for common actions:
-
-- **catchup** — "catch me up": a fast recap of a project (latest entries + open-task count).
-- **open** — "what's open": list the active tasks, each with its ID.
-- **log** — quick-log a decision; the title is auto-derived from the content if you omit it.
+Plus three shortcuts — **catchup**, **open**, and **log** — for the most common actions. See [Helper commands](#helper-commands) below.
 
 > **Already installed?** Run `pipx reinstall samskriti-project` to pick up the new commands.
 > If you installed an earlier build (it shows up as `samskriti-project-local` in `pipx list`),
@@ -125,6 +121,38 @@ Then type `/` in Cursor's Agent box, pick **sam**, and add your message.
 
 No true client feature binds a slash command straight to an MCP call yet — this command
 file is the closest supported equivalent, and it works today.
+
+## Helper commands
+
+Three shortcuts wrap the most common actions. You never call them by tool name directly —
+you trigger them with **`/sam` plus plain English**, or just by asking in plain language.
+
+| Want to… | Tool | What it does |
+|---|---|---|
+| Catch up | `catchup` | Recap of the project — latest entries plus how many tasks are still open. |
+| See what's open | `open` | Lists the active (open) tasks, each with its ID. |
+| Log a decision | `log` | Records a decision fast; the title is auto-derived from the text if you omit it. |
+
+**Two ways to invoke — both work:**
+
+1. **`/sam` slash command** (Claude Code / Cursor, once you've added the command file above):
+
+   ```
+   /sam catch me up
+   /sam what's open
+   /sam log we're switching local storage to SQLite
+   ```
+
+   You type `/sam` followed by plain English. There is **no** standalone `/catchup`,
+   `/open`, or `/log` command — it is always `/sam` plus what you want.
+
+2. **Plain language** (works in any MCP tool, including Codex):
+
+   ```
+   use samskriti-project to catch me up
+   use samskriti-project to show what's open
+   use samskriti-project to log: we're switching local storage to SQLite
+   ```
 
 ## Try it in 30 seconds
 
