@@ -1,0 +1,15 @@
+Use the `samskriti-project` MCP server to handle my request about the shared project
+memory — the text I type after this command is the request.
+
+Pick the most fitting tool:
+- "catch me up" / recap / what's the state → `catchup`
+- "what's open" / open tasks / todos → `open`
+- "log ..." / record a quick decision → `log`
+- record any entry (goal / bug / task / convention / update / rejected_idea) → `record_project_entry`
+- read the full state → `get_project_state`
+- find something → `search_project_state`
+- change an existing entry → `update_project_entry`
+- list known projects → `list_projects`
+
+Default the `project` to the current project's name unless I name a different one.
+Pass `source_agent: "cursor"` when you record or log anything.

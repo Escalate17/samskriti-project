@@ -82,7 +82,7 @@ args = []
 
 ## Verify it's connected
 
-In **Claude Code**, type `/mcp` — you should see `samskriti-project` listed with its 5 tools. (Cursor and Codex have similar MCP status indicators in their settings.)
+In **Claude Code**, type `/mcp` — you should see `samskriti-project` listed with its 8 tools. (Cursor and Codex have similar MCP status indicators in their settings.)
 
 ## Tools
 
@@ -91,6 +91,40 @@ In **Claude Code**, type `/mcp` — you should see `samskriti-project` listed wi
 - **search_project_state** — keyword search across entries.
 - **update_project_entry** — edit an entry's title, content, or status.
 - **list_projects** — list all tracked projects.
+
+Quick shortcuts for common actions:
+
+- **catchup** — "catch me up": a fast recap of a project (latest entries + open-task count).
+- **open** — "what's open": list the active tasks, each with its ID.
+- **log** — quick-log a decision; the title is auto-derived from the content if you omit it.
+
+> **Already installed?** Run `pipx reinstall samskriti-project` to pick up the new commands.
+> If you installed an earlier build (it shows up as `samskriti-project-local` in `pipx list`),
+> migrate once: `pipx uninstall samskriti-project-local && pipx install git+https://github.com/Escalate17/samskriti-project`.
+
+## Faster access: a `/sam` slash command
+
+Typing *"use the samskriti-project MCP …"* every time is tedious. Both Claude Code and
+Cursor support **custom slash commands** — Markdown prompt files you drop in a folder.
+They don't bind directly to a tool, but they inject a prompt that tells the agent to use
+this server, so `/sam <message>` does the right thing. (Codex has no slash-command
+mechanism for MCP; just say *"use samskriti-project to …"* — the agent picks the tool.)
+
+**Claude Code** — save [`slash-commands/claude-code/sam.md`](slash-commands/claude-code/sam.md) to one of:
+- `~/.claude/commands/sam.md` (available in every project), or
+- `<your-project>/.claude/commands/sam.md` (that project only).
+
+Then in Claude Code: `/sam what's open` or `/sam log we're dropping the Redis cache`.
+The `$ARGUMENTS` placeholder in the file receives everything you type after `/sam`.
+
+**Cursor** (1.6+) — save [`slash-commands/cursor/sam.md`](slash-commands/cursor/sam.md) to:
+- `~/.cursor/commands/sam.md` (global), or
+- `<your-project>/.cursor/commands/sam.md` (that project only).
+
+Then type `/` in Cursor's Agent box, pick **sam**, and add your message.
+
+No true client feature binds a slash command straight to an MCP call yet — this command
+file is the closest supported equivalent, and it works today.
 
 ## Try it in 30 seconds
 

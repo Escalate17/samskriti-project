@@ -213,6 +213,31 @@ class ProjectStateRepository:
         )
         return [dict(r) for r in cursor.fetchall()]
 
+    def get_recent_entries(self, project_id: str, limit: int = 10) -> list:
+        cursor = self.conn.cursor()
+        cursor.execute(
+            """
+            SELECT * FROM entries
+            WHERE project_id = ?
+            ORDER BY datetime(updated_at) DESC, datetime(created_at) DESC
+            LIMIT ?
+            """,
+            (project_id, limit)
+        )
+        return [dict(r) for r in cursor.fetchall()]
+
+    def get_open_tasks(self, project_id: str) -> list:
+        cursor = self.conn.cursor()
+        cursor.execute(
+            """
+            SELECT * FROM entries
+            WHERE project_id = ? AND category = 'task' AND status = 'active'
+            ORDER BY datetime(created_at) DESC
+            """,
+            (project_id,)
+        )
+        return [dict(r) for r in cursor.fetchall()]
+
     def close(self):
         self.conn.close()
 
@@ -352,8 +377,62 @@ class ProjectStateService:
     def list_projects(self) -> list:
         return self.repo.list_projects()
 
+    # --- Quick helper shortcuts ---------------------------------------
+    def catch_up(self, project_identifier: str, limit: int = 10) -> str:
+        """'Catch me up' — the most recent entries plus an open-task count."""
+        project = self.resolve_project(project_identifier)
+        recent = self.repo.get_recent_entries(project["id"], limit)
+        open_tasks = self.repo.get_open_tasks(project["id"])
+        if not recent:
+            return f"Project: {project['name']}\nNothing recorded yet — start with `log` or `record_project_entry`."
+
+        lines = [
+            f"=== Catch-up: {project['name']} ===",
+            f"{len(open_tasks)} open task(s). Latest {len(recent)} update(s):",
+            "",
+        ]
+        for e in recent:
+            status_str = f" [{e['status']}]" if e['status'] != 'active' else ""
+            agent_str = f" (by {e['source_agent']})" if e['source_agent'] else ""
+            lines.append(f"- [{e['category'].upper()}] {e['title']}{status_str}{agent_str}")
+            first = next((cl for cl in e['content'].splitlines() if cl.strip()), "")
+            if first:
+                lines.append(f"  {first.strip()}")
+        return "\n".join(lines).strip()
+
+    def list_open_tasks(self, project_identifier: str) -> str:
+        """'What's open' — active tasks with their IDs."""
+        project = self.resolve_project(project_identifier)
+        tasks = self.repo.get_open_tasks(project["id"])
+        if not tasks:
+            return f"No open tasks for project '{project['name']}'."
+        lines = [f"=== Open tasks: {project['name']} ({len(tasks)}) ===", ""]
+        for t in tasks:
+            agent_str = f" (by {t['source_agent']})" if t['source_agent'] else ""
+            lines.append(f"- {t['title']}{agent_str}")
+            lines.append(f"  ID: {t['id']}")
+        return "\n".join(lines).strip()
+
+    def quick_log(self, project_identifier: str, content: str, title: str = None, source_agent: str = None) -> dict:
+        """'log' — fast-record a decision; title auto-derived from content if omitted."""
+        content = (content or "").strip()
+        if not content:
+            raise ValueError("Content cannot be empty")
+        if not title or not title.strip():
+            title = next((cl.strip() for cl in content.splitlines() if cl.strip()), content)
+            if len(title) > 72:
+                title = title[:69].rstrip() + "..."
+        return self.record_entry(
+            project_identifier=project_identifier,
+            category="decision",
+            title=title,
+            content=content,
+            status="active",
+            source_agent=source_agent,
+        )
+
 # 3. MCP JSON-RPC Server
-SERVER_INFO = {"name": "samskriti-project-state", "version": "0.1.0"}
+SERVER_INFO = {"name": "samskriti-project-state", "version": "0.2.0"}
 DEFAULT_PROTOCOL = "2024-11-05"
 
 TOOLS = [
@@ -421,6 +500,43 @@ TOOLS = [
             "type": "object",
             "properties": {}
         }
+    },
+    {
+        "name": "catchup",
+        "description": "Catch me up: a quick recap of a project — its most recent entries plus how many tasks are still open.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "project": {"type": "string", "description": "Project name or absolute root path"},
+                "limit": {"type": "integer", "description": "How many recent entries to show (default 10)"}
+            },
+            "required": ["project"]
+        }
+    },
+    {
+        "name": "open",
+        "description": "What's open: list the open (active) tasks for a project, each with its ID.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "project": {"type": "string", "description": "Project name or absolute root path"}
+            },
+            "required": ["project"]
+        }
+    },
+    {
+        "name": "log",
+        "description": "Quick-log a decision: record a decision fast. Title is optional and auto-derived from the content if omitted.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "project": {"type": "string", "description": "Project name or absolute root path"},
+                "content": {"type": "string", "description": "The decision to record"},
+                "title": {"type": "string", "description": "Optional short title (auto-derived from content if omitted)"},
+                "source_agent": {"type": "string", "description": "Optional agent name (e.g. 'claude-code')"}
+            },
+            "required": ["project", "content"]
+        }
     }
 ]
 
@@ -468,7 +584,25 @@ def _call_tool(name: str, args: dict) -> str:
         for p in projs:
             lines.append(f"- {p['name']} ({p['root_path']}) ID: {p['id']}")
         return "\n".join(lines)
-        
+
+    elif name == "catchup":
+        return service.catch_up(
+            project_identifier=args["project"],
+            limit=int(args.get("limit", 10))
+        )
+
+    elif name == "open":
+        return service.list_open_tasks(project_identifier=args["project"])
+
+    elif name == "log":
+        entry = service.quick_log(
+            project_identifier=args["project"],
+            content=args["content"],
+            title=args.get("title"),
+            source_agent=args.get("source_agent")
+        )
+        return f"Logged decision: '{entry['title']}' (ID: {entry['id']})."
+
     raise ValueError(f"unknown tool: {name}")
 
 def _send(obj: dict) -> None:
@@ -495,7 +629,7 @@ Usage:
   samskriti-project --version  Show version and exit
 
 Tools exposed: record_project_entry, get_project_state, search_project_state,
-update_project_entry, list_projects
+update_project_entry, list_projects, catchup, open, log
 
 State is stored locally in a SQLite database under ~/.samskriti/
 (override with SAMSKRITI_HOME or SAMSKRITI_PROJECT_DB).
