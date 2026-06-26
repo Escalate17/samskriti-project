@@ -45,6 +45,22 @@ If you see the help text, you're ready to connect it.
 
 ## Connect
 
+### Easiest: let it configure your tool for you
+
+```bash
+samskriti-project setup          # Claude Code
+samskriti-project setup --cursor # Cursor
+samskriti-project setup --codex  # Codex
+samskriti-project setup --all    # all three
+```
+
+This writes the MCP config block into the right file for you (backing up any existing
+config first), so you don't have to hand-edit JSON. **Then fully quit and reopen your tool**
+— MCP servers are loaded only when the tool starts, so a running session won't see it until
+you restart.
+
+### Or add it manually
+
 Add the server to your AI tool's MCP config, then **fully restart the tool**.
 
 **Claude Code** (`~/.claude.json`):

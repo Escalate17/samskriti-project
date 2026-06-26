@@ -432,7 +432,7 @@ class ProjectStateService:
         )
 
 # 3. MCP JSON-RPC Server
-SERVER_INFO = {"name": "samskriti-project-state", "version": "0.2.0"}
+SERVER_INFO = {"name": "samskriti-project-state", "version": "0.3.0"}
 DEFAULT_PROTOCOL = "2024-11-05"
 
 TOOLS = [
@@ -631,9 +631,104 @@ Usage:
 Tools exposed: record_project_entry, get_project_state, search_project_state,
 update_project_entry, list_projects, catchup, open, log
 
+Setup (writes the MCP config for you, then asks you to restart your tool):
+  samskriti-project setup            Configure Claude Code (~/.claude.json)
+  samskriti-project setup --cursor   Configure Cursor (~/.cursor/mcp.json)
+  samskriti-project setup --codex    Configure Codex (~/.codex/config.toml)
+  samskriti-project setup --all      Configure all three
+
 State is stored locally in a SQLite database under ~/.samskriti/
 (override with SAMSKRITI_HOME or SAMSKRITI_PROJECT_DB).
 """
+
+_SERVER_KEY = "samskriti-project"
+_SERVER_ENTRY = {"command": "samskriti-project", "args": []}
+
+
+def _setup_json(path: Path) -> str:
+    path = path.expanduser()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    data = {}
+    if path.exists():
+        raw = path.read_text()
+        try:
+            data = json.loads(raw) if raw.strip() else {}
+        except Exception:
+            return f"  ⚠ {path}: not valid JSON — left unchanged. Add the block by hand."
+        path.with_suffix(path.suffix + ".bak").write_text(raw)  # backup
+    if not isinstance(data, dict):
+        return f"  ⚠ {path}: unexpected format — left unchanged."
+    servers = data.setdefault("mcpServers", {})
+    existed = _SERVER_KEY in servers
+    servers[_SERVER_KEY] = dict(_SERVER_ENTRY)
+    path.write_text(json.dumps(data, indent=2) + "\n")
+    return f"  ✓ {path}: samskriti-project {'refreshed' if existed else 'added'}"
+
+
+def _setup_toml(path: Path) -> str:
+    path = path.expanduser()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    block = (
+        "[mcp_servers.samskriti-project]\n"
+        'command = "samskriti-project"\n'
+        "args = []\n"
+    )
+    existing = path.read_text() if path.exists() else ""
+    if "[mcp_servers.samskriti-project]" in existing:
+        return f"  ✓ {path}: samskriti-project already present (left as-is)"
+    if existing:
+        path.with_suffix(path.suffix + ".bak").write_text(existing)  # backup
+        if not existing.endswith("\n"):
+            existing += "\n"
+        path.write_text(existing + "\n" + block)
+    else:
+        path.write_text(block)
+    return f"  ✓ {path}: samskriti-project added"
+
+
+def _run_setup(args: list) -> None:
+    targets = []
+    if "--all" in args:
+        targets = ["claude", "cursor", "codex"]
+    else:
+        if "--claude" in args:
+            targets.append("claude")
+        if "--cursor" in args:
+            targets.append("cursor")
+        if "--codex" in args:
+            targets.append("codex")
+    if not targets:
+        targets = ["claude"]
+
+    home = Path.home()
+    results = []
+    tools = []
+    for t in targets:
+        if t == "claude":
+            results.append(_setup_json(home / ".claude.json")); tools.append("Claude Code")
+        elif t == "cursor":
+            results.append(_setup_json(home / ".cursor" / "mcp.json")); tools.append("Cursor")
+        elif t == "codex":
+            results.append(_setup_toml(home / ".codex" / "config.toml")); tools.append("Codex")
+
+    sep = "─" * 64
+    out = ["Configured samskriti-project (a .bak backup was made of any existing config):", ""]
+    out += results
+    out += [
+        "",
+        sep,
+        "  ⚠  IMPORTANT: now fully QUIT and reopen " + " / ".join(tools) + ".",
+        "     A running session will NOT pick up the server — MCP servers",
+        "     are loaded only when the tool starts.",
+        sep,
+        "",
+        "After restarting, type /mcp (in Claude Code) — you should see",
+        "samskriti-project with its 8 tools.",
+    ]
+    if targets == ["claude"]:
+        out += ["", "Use --cursor, --codex, or --all to configure other tools too."]
+    sys.stdout.write("\n".join(out) + "\n")
+    sys.stdout.flush()
 
 
 def main() -> None:
@@ -645,6 +740,9 @@ def main() -> None:
     if any(a in ("-V", "--version") for a in args):
         sys.stdout.write(f"{SERVER_INFO['name']} {SERVER_INFO['version']}\n")
         sys.stdout.flush()
+        return
+    if args and args[0] == "setup":
+        _run_setup(args[1:])
         return
 
     for line in sys.stdin:
